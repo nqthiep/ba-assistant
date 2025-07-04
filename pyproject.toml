@@ -1,0 +1,36 @@
+# pyproject.toml
+[tool.poetry]
+name = "ba-assistant"
+version = "0.1.0"
+description = "BA Assistant for software project teams"
+authors = ["Your Name <you@example.com>"] # Thay thế bằng tên và email của bạn
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12" # Đảm bảo phiên bản Python tương thích với các thư viện
+
+# Core Libraries
+markitdown = "==0.1.2"
+kg-gen = "*" # Phiên bản bất kỳ, theo yêu cầu từ requirements.txt của bạn
+graphiti-core = "==0.15.0"
+
+# LLM Framework & Agent Orchestration
+langchain = "==0.3.26"
+langgraph = "==0.5.1"
+langchain-community = "==0.3.27"
+langchain-openai = "==0.3.27" # Bao gồm vì đây là thư viện phổ biến trong dự án LLM
+
+# Frontend & UI
+chainlit = "==2.6.0"
+
+# Database
+supabase = "==2.16.0"
+
+# Utilities & Data Validation
+python-dotenv = "==1.1.1"
+pydantic = "==2.11.7" # Pydantic v2 là bắt buộc và tương thích với LangChain/LangGraph
+onnxruntime = "==1.19.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
