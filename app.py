@@ -6,6 +6,7 @@ This file initializes and runs the Chainlit app for the BA Assistant project.
 import chainlit as cl
 import os
 from dotenv import load_dotenv
+from markitdown import MarkItDown
 
 # Load environment variables from .env if present
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
@@ -61,6 +62,12 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
             await cl.Message(
                 content=f"I received the following files:\n{chr(10).join(file_names)}\n\nPlease wait for the system to build knowledge graph..."
             ).send()
+
+            md = MarkItDown(enable_plugins=True) # Set to True to enable plugins
+            for file in files:
+                result = md.convert(file.path)
+                print(result)
+                
 
 @cl.on_message
 async def main(message: cl.Message):
