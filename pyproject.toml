@@ -13,12 +13,15 @@ python = ">=3.10,<3.12" # Đảm bảo phiên bản Python tương thích với 
 markitdown = "==0.1.2"
 kg-gen = "*" # Phiên bản bất kỳ, theo yêu cầu từ requirements.txt của bạn
 graphiti-core = "==0.15.0"
+neo4j = "*"
 
 # LLM Framework & Agent Orchestration
 langchain = "==0.3.26"
 langgraph = "==0.5.1"
 langchain-community = "==0.3.27"
 langchain-openai = "==0.3.27" # Bao gồm vì đây là thư viện phổ biến trong dự án LLM
+langchain-experimental = "*"
+langchain-google-genai = "*"
 
 # Frontend & UI
 chainlit = "==2.6.0"

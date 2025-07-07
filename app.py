@@ -11,6 +11,17 @@ from markitdown import MarkItDown
 # Load environment variables from .env if present
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
+from langchain_experimental.graph_transformers import LLMGraphTransformer
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
+from langchain_core.documents import Document
+
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+
+# llm = ChatOpenAI(temperature=0, model_name="gpt-4-turbo")
+
+llm_transformer = LLMGraphTransformer(llm=llm)
 
 
 commands = [
@@ -67,6 +78,10 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
             for file in files:
                 result = md.convert(file.path)
                 print(result)
+                documents = [Document(page_content=result.text_content)]
+                graph_documents = await llm_transformer.aconvert_to_graph_documents(documents)
+                print(f"Nodes:{graph_documents[0].nodes}")
+                print(f"Relationships:{graph_documents[0].relationships}")
                 
 
 @cl.on_message
