@@ -12,8 +12,9 @@ python = ">=3.10,<3.12" # Đảm bảo phiên bản Python tương thích với 
 # Core Libraries
 markitdown = "==0.1.2"
 kg-gen = "*" # Phiên bản bất kỳ, theo yêu cầu từ requirements.txt của bạn
-graphiti-core = "==0.15.0"
+graphiti-core = { version = "==0.15.0", extras = ["anthropic", "groq", "google-genai"] }
 neo4j = "*"
+falkordb = "*"
 
 # LLM Framework & Agent Orchestration
 langchain = "==0.3.26"
