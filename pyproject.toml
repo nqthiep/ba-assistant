@@ -28,6 +28,7 @@ chainlit = "==2.6.0"
 
 # Database
 supabase = "==2.16.0"
+redis = "==6.2.0"
 
 # Utilities & Data Validation
 python-dotenv = "==1.1.1"
