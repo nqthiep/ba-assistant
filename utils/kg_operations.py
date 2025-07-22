@@ -10,6 +10,48 @@ from graphiti_core.nodes import EpisodeType
 from graphiti_core.utils.maintenance.graph_data_operations import clear_data, retrieve_episodes
 from database.graphiti_client import GraphitiClient
 
+sample_markdown = """
+# Software Requirements Specification (SRS)
+
+Đây là phần giới thiệu tổng quan về tài liệu SRS.
+
+## 1. Introduction
+
+### 1.1 Purpose
+Mục đích của tài liệu này là mô tả các yêu cầu cho hệ thống phần mềm.
+
+### 1.2 Scope
+Phạm vi của dự án bao gồm:
+- Module A
+- Module B
+- Module C
+
+## 2. System Requirements
+
+### 2.1 Functional Requirements
+Các yêu cầu chức năng bao gồm:
+
+1. Người dùng có thể đăng nhập
+2. Người dùng có thể xem thông tin
+3. Người dùng có thể cập nhật dữ liệu
+
+### 2.2 Non-Functional Requirements
+Các yêu cầu phi chức năng:
+- Performance: Response time < 2s
+- Security: Mã hóa dữ liệu
+- Availability: 99.9% uptime
+
+## 3. System Architecture
+
+### 3.1 Overview
+Kiến trúc hệ thống sử dụng mô hình 3-tier.
+
+### 3.2 Database Design
+Thiết kế cơ sở dữ liệu bao gồm các bảng:
+- Users
+- Products
+- Orders
+"""
 
 class KnowledgeGraphOperations:
     """
@@ -42,6 +84,7 @@ class KnowledgeGraphOperations:
             source=EpisodeType.text,
             source_description=source_description,
             reference_time=datetime.now(timezone.utc),
+            update_communities=True
         )
     
     async def add_files_to_episodes(self, files: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
@@ -55,22 +98,29 @@ class KnowledgeGraphOperations:
             List of episode creation results
         """
         results = []
+
+        from utils.markdown_section_parser import MarkdownSectionParser
+        parser = MarkdownSectionParser()
         
         for file_path, file_content in files:
-            result = await self.add_episode(
-                name=f"Document: {file_path}",
-                content=file_content,
-                source_description=f"Content from file: {file_path}"
-            )
-            
-            if result:
-                episode_info = {
-                    "file_path": file_path,
-                    "episode_uuid": result.episode.uuid,
-                    "nodes_created": len(result.nodes),
-                    "edges_created": len(result.edges)
-                }
-                results.append(episode_info)
+            # Parse markdown
+            sections = parser.parse_markdown_to_sections(file_content)
+
+            for i, section in enumerate(sections):
+                result = await self.add_episode(
+                    name=f"Document: {section['title']}",
+                    content=section['raw_content'],
+                    source_description=f"Heading from file: {section['title']}"
+                )
+                
+                if result:
+                    episode_info = {
+                        "file_path": file_path,
+                        "episode_uuid": result.episode.uuid,
+                        "nodes_created": len(result.nodes),
+                        "edges_created": len(result.edges)
+                    }
+                    results.append(episode_info)
         
         return results
     

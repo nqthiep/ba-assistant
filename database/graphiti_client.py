@@ -31,10 +31,17 @@ class GraphitiClient:
     def _initialize_graphiti(self) -> None:
         """Initialize Graphiti with Neo4j driver."""
         # Get connection details from environment variables
-        neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-        neo4j_password = os.getenv("NEO4J_PASSWORD", "12345678")
+        neo4j_uri = os.getenv("NEO4J_URI")
+        neo4j_user = os.getenv("NEO4J_USER")
+        neo4j_password = os.getenv("NEO4J_PASSWORD")
         
+        if not neo4j_uri:
+            raise ValueError('NEO4J_URI must be set in environment variables')
+        if not neo4j_user:
+            raise ValueError('NEO4J_USER must be set in environment variables')
+        if not neo4j_password:
+            raise ValueError('NEO4J_PASSWORD must be set in environment variables')
+
         # Create Neo4j driver
         driver = Neo4jDriver(
             uri=neo4j_uri,
@@ -55,6 +62,7 @@ class GraphitiClient:
     async def build_indices_and_constraints(self) -> None:
         """Build database indices and constraints."""
         await self.graphiti.build_indices_and_constraints()
+        await self.graphiti.build_communities()
     
     async def verify_connection(self) -> None:
         """Verify database connectivity."""

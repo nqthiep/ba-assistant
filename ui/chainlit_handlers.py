@@ -39,7 +39,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
 """
         
         await cl.Message(content=content).send()
-        print(f"Status: {status} and has data: {status['has_data']}")
+        print(f"Status: {status} and has data: {status.get('has_data', False)}")
         
         if not status.get("has_data", False):
             from database.graphiti_client import GraphitiClient
@@ -64,6 +64,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
             await cl.Message(content="File source management feature coming soon!").send()
         elif command == "Clear knowledge graph":
             await self._clear_knowledge_graph()
+            await self._ask_file_source()
     
     async def _handle_user_query(self, user_input: str) -> None:
         """Handle user query messages."""
