@@ -7,6 +7,7 @@ Follows Single Responsibility Principle - only manages KG operations.
 from datetime import datetime, timezone
 from typing import List, Tuple, Dict, Any
 from graphiti_core.nodes import EpisodeType
+from graphiti_core.utils.bulk_utils import RawEpisode
 from graphiti_core.utils.maintenance.graph_data_operations import clear_data, retrieve_episodes
 from database.graphiti_client import GraphitiClient
 
@@ -89,7 +90,7 @@ class KnowledgeGraphOperations:
     
     async def add_files_to_episodes(self, files: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
         """
-        Add multiple files as episodes to the knowledge graph.
+        Add multiple files as episodes to the knowledge graph using bulk addition.
         
         Args:
             files: List of tuples containing (file_path, file_content)
@@ -97,32 +98,88 @@ class KnowledgeGraphOperations:
         Returns:
             List of episode creation results
         """
-        results = []
-
         from utils.markdown_section_parser import MarkdownSectionParser
         parser = MarkdownSectionParser()
+        
+        # Collect all episodes for bulk addition
+        bulk_episodes = []
+        episode_metadata = []  # Track metadata for each episode
         
         for file_path, file_content in files:
             # Parse markdown
             sections = parser.parse_markdown_to_sections(file_content)
 
-            for i, section in enumerate(sections):
-                result = await self.add_episode(
+            for section in sections:
+                # Create RawEpisode for bulk addition
+                raw_episode = RawEpisode(
                     name=f"Document: {section['title']}",
                     content=section['raw_content'],
-                    source_description=f"Heading from file: {section['title']}"
+                    source=EpisodeType.text,
+                    source_description=f"Heading from file: {section['title']}",
+                    reference_time=datetime.now(timezone.utc)
                 )
                 
-                if result:
-                    episode_info = {
-                        "file_path": file_path,
-                        "episode_uuid": result.episode.uuid,
-                        "nodes_created": len(result.nodes),
-                        "edges_created": len(result.edges)
-                    }
-                    results.append(episode_info)
+                bulk_episodes.append(raw_episode)
+                episode_metadata.append({
+                    "file_path": file_path,
+                    "section_title": section['title']
+                })
         
-        return results
+        # Add all episodes in bulk with fallback to individual additions
+        if bulk_episodes:
+            try:
+                # Try bulk addition first
+                bulk_result = await self.graphiti_client.graphiti.add_episode_bulk(bulk_episodes)
+                
+                # Format results to match expected return format
+                results = []
+                if bulk_result:
+                    # Handle different possible return formats from bulk operation
+                    if isinstance(bulk_result, list):
+                        for i, episode_result in enumerate(bulk_result):
+                            if episode_result and i < len(episode_metadata) and hasattr(episode_result, 'episode'):
+                                episode_info = {
+                                    "file_path": episode_metadata[i]["file_path"],
+                                    "episode_uuid": episode_result.episode.uuid,
+                                    "nodes_created": len(episode_result.nodes) if hasattr(episode_result, 'nodes') else 0,
+                                    "edges_created": len(episode_result.edges) if hasattr(episode_result, 'edges') else 0
+                                }
+                                results.append(episode_info)
+                    else:
+                        # If bulk_result is not a list, it might be a single result or different format
+                        # For now, we'll fall back to individual additions
+                        raise ValueError("Unexpected bulk result format")
+                
+                return results
+                
+            except Exception as e:
+                # If bulk addition fails, fall back to individual episode additions
+                print(f"Bulk episode addition failed: {e}. Falling back to individual additions.")
+                
+                results = []
+                for i, raw_episode in enumerate(bulk_episodes):
+                    try:
+                        result = await self.add_episode(
+                            name=raw_episode.name,
+                            content=raw_episode.content,
+                            source_description=raw_episode.source_description
+                        )
+                        
+                        if result and i < len(episode_metadata):
+                            episode_info = {
+                                "file_path": episode_metadata[i]["file_path"],
+                                "episode_uuid": result.episode.uuid,
+                                "nodes_created": len(result.nodes),
+                                "edges_created": len(result.edges)
+                            }
+                            results.append(episode_info)
+                    except Exception as individual_error:
+                        print(f"Failed to add individual episode {raw_episode.name}: {individual_error}")
+                        continue
+                
+                return results
+        
+        return []
     
     async def clear_knowledge_graph(self) -> None:
         """Clear all data from the knowledge graph."""
