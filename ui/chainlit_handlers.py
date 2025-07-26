@@ -2,22 +2,24 @@
 Chainlit UI Handlers
 Handles all Chainlit-specific UI interactions and event handlers.
 Follows Single Responsibility Principle - only manages UI interactions.
+Uses Layer 3 (BA Knowledge Service) directly for clean architecture.
 """
 
 import chainlit as cl
 from typing import List, Tuple
-from utils.kg_operations import KnowledgeGraphOperations
+from knowledge_graph import KnowledgeGraphFactory
 from utils.file_receiver import on_file_receiver
 
 
 class ChainlitHandlers:
     """
     Manages Chainlit UI event handlers and user interactions.
-    Depends on KnowledgeGraphOperations abstraction (Dependency Inversion Principle).
+    Uses Layer 3 (BA Knowledge Service) directly for clean 3-layer architecture.
     """
     
     def __init__(self):
-        self.kg_operations = KnowledgeGraphOperations()
+        self.factory = KnowledgeGraphFactory()
+        self.ba_knowledge = self.factory.get_ba_knowledge_service()
         self.commands = [
             {"id": "Add File Source", "icon": "file-plus", "description": "Add new file source", "button": True},
             {"id": "Manager File Source", "icon": "folder-kanban", "description": "Manager file source", "button": True},
@@ -27,7 +29,7 @@ class ChainlitHandlers:
     async def on_chat_start(self) -> None:
         """Handle chat start event."""
         await cl.context.emitter.set_commands(self.commands)
-        status = await self.kg_operations.check_status()
+        status = await self.ba_knowledge.get_knowledge_status()
         
         content = """### Welcome to BA Assistant: Trợ lý thông minh cho dự án phần mềm của bạn   
 BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản lý và truy cập thông tin hiệu quả. Nó chuyển đổi tài liệu dự án thành nguồn tri thức tương tác.  
@@ -42,11 +44,13 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         print(f"Status: {status} and has data: {status.get('has_data', False)}")
         
         if not status.get("has_data", False):
-            from database.graphiti_client import GraphitiClient
-            graphiti_client = GraphitiClient()
-            await graphiti_client.build_indices_and_constraints()
-            await self._ask_file_source()
-            await cl.Message(content="Knowledge graph has been built successfully!").send()
+            # Use Layer 3 (BA Knowledge Service) instead of direct GraphitiClient
+            init_result = await self.ba_knowledge.initialize_knowledge_system()
+            if init_result.get("status") == "success":
+                await self._ask_file_source()
+                await cl.Message(content="Knowledge graph has been built successfully!").send()
+            else:
+                await cl.Message(content=f"Failed to initialize: {init_result.get('message')}").send()
     
     async def on_message(self, message: cl.Message) -> None:
         """Handle incoming user messages."""
@@ -68,8 +72,8 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
     
     async def _handle_user_query(self, user_input: str) -> None:
         """Handle user query messages."""
-        search_result = await self.kg_operations.search(user_input)
-        formatted_result = self.kg_operations.format_search_results(search_result)
+        # Use Layer 3 for business knowledge search with formatting
+        formatted_result = await self.ba_knowledge.search_business_knowledge(user_input)
         await cl.Message(content="Here is the search result:\n" + formatted_result).send()
     
     async def _ask_file_source(self) -> None:
@@ -104,16 +108,37 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
             content=f"I received the following files:\n{chr(10).join(file_names)}\n\nPlease wait for the system to build knowledge graph..."
         ).send()
         
-        # Add files to knowledge graph
-        results = await self.kg_operations.add_files_to_episodes(files)
+        # Add files to knowledge graph using Layer 3
+        result = await self.ba_knowledge.add_business_documents(files)
         
-        # Send results to user
-        for result in results:
-            await cl.Message(
-                content=f"Episode created: {result['episode_uuid']}\nNodes created: {result['nodes_created']}\nEdges created: {result['edges_created']}"
-            ).send()
+        # Send results to user using Layer 3 response format
+        if result.get("status") == "success":
+            summary = result.get("summary", {})
+            by_category = result.get("by_category", {})
+            
+            content = f"✅ **Documents processed successfully!**\n\n"
+            content += f"📊 **Summary:**\n"
+            content += f"- Total documents: {summary.get('total_documents', 0)}\n"
+            content += f"- Episodes created: {summary.get('total_episodes', 0)}\n"
+            content += f"- Knowledge nodes: {summary.get('total_nodes', 0)}\n"
+            content += f"- Relationships: {summary.get('total_edges', 0)}\n\n"
+            
+            content += f"📂 **By Category:**\n"
+            for category, items in by_category.items():
+                if items:
+                    content += f"- {category.replace('_', ' ').title()}: {len(items)} sections\n"
+            
+            await cl.Message(content=content).send()
+        else:
+            error_msg = result.get("message", "Unknown error occurred")
+            await cl.Message(content=f"❌ **Error processing documents:** {error_msg}").send()
     
     async def _clear_knowledge_graph(self) -> None:
-        """Clear the knowledge graph."""
-        await self.kg_operations.clear_knowledge_graph()
-        await cl.Message(content="Knowledge graph has been cleared successfully!").send()
+        """Clear the knowledge graph using Layer 3."""
+        result = await self.ba_knowledge.clear_business_knowledge()
+        
+        if result.get("status") == "success":
+            await cl.Message(content="✅ Knowledge graph has been cleared successfully!").send()
+        else:
+            error_msg = result.get("message", "Unknown error occurred")
+            await cl.Message(content=f"❌ **Error clearing knowledge:** {error_msg}").send()
