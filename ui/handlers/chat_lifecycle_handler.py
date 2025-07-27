@@ -8,6 +8,7 @@ import chainlit as cl
 from typing import List, Dict, Any
 from .base_handler import BaseChainlitHandler
 from .response_formatter import ResponseFormatter
+from ..constants import Commands
 
 
 class ChatLifecycleHandler(BaseChainlitHandler):
@@ -33,11 +34,7 @@ class ChatLifecycleHandler(BaseChainlitHandler):
             factory: KnowledgeGraphFactory for dependency injection
         """
         super().__init__(factory)
-        self.commands = [
-            {"id": "Add File Source", "icon": "file-plus", "description": "Add new file source", "button": True},
-            {"id": "Manager File Source", "icon": "folder-kanban", "description": "Manager file source", "button": True},
-            {"id": "Clear knowledge graph", "icon": "trash", "description": "Clear knowledge graph", "button": True},
-        ]
+        self.commands = Commands.get_all_commands()
     
     async def handle(self, *args, **kwargs) -> None:
         """

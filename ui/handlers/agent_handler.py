@@ -8,6 +8,7 @@ import chainlit as cl
 from typing import Dict, Any, List, Optional
 from .base_handler import BaseChainlitHandler
 from .response_formatter import ResponseFormatter
+from ..constants import UIMessages, AgentWorkflows, StatusMessages
 
 
 class LangGraphAgentHandler(BaseChainlitHandler):
@@ -71,7 +72,7 @@ class LangGraphAgentHandler(BaseChainlitHandler):
         # This method will contain the main agent workflow logic
         
         # Placeholder implementation
-        await self.send_message("🤖 **Agent Processing**\n\nLangGraph agent integration is not yet implemented.\n\nThis handler is prepared for future agent-based workflows including:\n- Multi-step reasoning\n- Tool usage coordination\n- Knowledge graph integration\n- Contextual conversation handling")
+        await self.send_message(UIMessages.AGENT_NOT_IMPLEMENTED)
         
         # Future implementation would include:
         # 1. Context preparation for agent
@@ -118,7 +119,7 @@ class LangGraphAgentHandler(BaseChainlitHandler):
         # - Knowledge extraction workflows
         # - Multi-step reasoning workflows
         
-        return {"status": "not_implemented", "message": "Workflow execution not yet implemented"}
+        return {"status": StatusMessages.NOT_IMPLEMENTED, "message": StatusMessages.WORKFLOW_NOT_IMPLEMENTED}
     
     async def handle_agent_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -136,7 +137,7 @@ class LangGraphAgentHandler(BaseChainlitHandler):
         # - Knowledge search actions -> MessageHandler  
         # - Command execution actions -> CommandHandler
         
-        return {"status": "not_implemented", "message": "Agent action handling not yet implemented"}
+        return {"status": StatusMessages.NOT_IMPLEMENTED, "message": StatusMessages.ACTION_NOT_IMPLEMENTED}
     
     def get_agent_status(self) -> Dict[str, Any]:
         """
@@ -200,12 +201,7 @@ class LangGraphAgentHandler(BaseChainlitHandler):
             List of workflow names
         """
         # Future implementation would return actual workflow names
-        return [
-            "document_analysis",
-            "knowledge_extraction", 
-            "question_answering",
-            "multi_step_reasoning"
-        ]
+        return AgentWorkflows.get_available_workflows()
     
     async def configure_agent_tools(self, tools: List[Any]) -> None:
         """

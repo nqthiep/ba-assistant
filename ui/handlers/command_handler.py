@@ -7,6 +7,7 @@ Follows Single Responsibility Principle - only manages command processing.
 import chainlit as cl
 from .base_handler import BaseChainlitHandler
 from .response_formatter import ResponseFormatter
+from ..constants import Commands, UIMessages
 
 
 class CommandHandler(BaseChainlitHandler):
@@ -41,14 +42,15 @@ class CommandHandler(BaseChainlitHandler):
         Args:
             command: Command string to process
         """
-        if command == "Add File Source":
+        if command == Commands.ADD_FILE_SOURCE["id"]:
             await self.handle_add_file_source()
-        elif command == "Manager File Source":
+        elif command == Commands.MANAGER_FILE_SOURCE["id"]:
             await self.handle_manager_file_source()
-        elif command == "Clear knowledge graph":
+        elif command == Commands.CLEAR_KNOWLEDGE_GRAPH["id"]:
             await self.handle_clear_knowledge_graph()
         else:
-            await self.send_error_message(f"Unknown command: {command}")
+            error_msg = UIMessages.UNKNOWN_COMMAND_ERROR.format(command=command)
+            await self.send_error_message(error_msg)
     
     async def handle_add_file_source(self) -> None:
         """
@@ -87,7 +89,8 @@ class CommandHandler(BaseChainlitHandler):
             await self.handle_add_file_source()
         else:
             error_msg = result.get("message", "Unknown error occurred")
-            await self.send_error_message(f"Failed to clear knowledge graph: {error_msg}")
+            error_message = UIMessages.CLEAR_KNOWLEDGE_GRAPH_ERROR.format(message=error_msg)
+            await self.send_error_message(error_message)
     
     def get_supported_commands(self) -> list[str]:
         """
@@ -98,9 +101,9 @@ class CommandHandler(BaseChainlitHandler):
             List of supported command strings
         """
         return [
-            "Add File Source",
-            "Manager File Source", 
-            "Clear knowledge graph"
+            Commands.ADD_FILE_SOURCE["id"],
+            Commands.MANAGER_FILE_SOURCE["id"], 
+            Commands.CLEAR_KNOWLEDGE_GRAPH["id"]
         ]
     
     async def add_custom_command_handler(self, command: str, handler_func) -> None:

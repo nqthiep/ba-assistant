@@ -7,6 +7,7 @@ Follows Single Responsibility Principle - only manages message processing.
 import chainlit as cl
 from .base_handler import BaseChainlitHandler
 from .response_formatter import ResponseFormatter
+from ..constants import UIMessages
 
 
 class MessageHandler(BaseChainlitHandler):
@@ -86,7 +87,7 @@ class MessageHandler(BaseChainlitHandler):
         # This method provides the foundation for agent-based message processing
         
         # Placeholder implementation
-        await self.send_message("Agent-based processing is not yet implemented.")
+        await self.send_message(UIMessages.AGENT_NOT_IMPLEMENTED)
         
         # Future implementation would include:
         # 1. Agent initialization and configuration

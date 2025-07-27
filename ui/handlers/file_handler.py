@@ -8,6 +8,7 @@ import chainlit as cl
 from typing import List, Tuple, Any
 from .base_handler import BaseChainlitHandler
 from .response_formatter import ResponseFormatter
+from ..constants import FileTypes, FileSettings, UIMessages
 
 
 class FileHandler(BaseChainlitHandler):
@@ -34,16 +35,7 @@ class FileHandler(BaseChainlitHandler):
             factory: KnowledgeGraphFactory for dependency injection
         """
         super().__init__(factory)
-        self.supported_file_types = [
-            "application/msword",        # .doc
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
-            "application/vnd.ms-excel",  # .xls
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
-            "text/markdown",             # .md
-            "text/html",                 # .html
-            "application/pdf",           # .pdf
-            "text/plain"                 # .txt
-        ]
+        self.supported_file_types = FileTypes.get_supported_types()
     
     async def handle(self, files: List[Any]) -> None:
         """
@@ -60,9 +52,9 @@ class FileHandler(BaseChainlitHandler):
         Displays file upload dialog with supported file types.
         """
         files = await cl.AskFileMessage(
-            max_size_mb=10,
-            max_files=10,
-            content="Please upload files to begin build knowledge graph!",
+            max_size_mb=FileSettings.MAX_SIZE_MB,
+            max_files=FileSettings.MAX_FILES,
+            content=UIMessages.FILE_UPLOAD_REQUEST,
             accept=self.supported_file_types
         ).send()
         

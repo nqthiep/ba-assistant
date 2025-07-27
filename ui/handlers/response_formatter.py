@@ -5,6 +5,7 @@ Follows Single Responsibility Principle - only handles response formatting.
 """
 
 from typing import Dict, Any, List
+from ..constants import UIMessages
 
 
 class ResponseFormatter:
@@ -25,16 +26,7 @@ class ResponseFormatter:
         Returns:
             Formatted welcome message string
         """
-        content = """### Welcome to BA Assistant: Trợ lý thông minh cho dự án phần mềm của bạn   
-BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản lý và truy cập thông tin hiệu quả. Nó chuyển đổi tài liệu dự án thành nguồn tri thức tương tác.  
-
-## Tính năng chính:  
-- **Xử lý tài liệu**: Tiếp nhận, xử lý đa dạng tài liệu dự án (yêu cầu, thiết kế).  
-- **Tạo Knowledge Graph**: Xây dựng bản đồ tri thức chi tiết, liên kết thông tin.  
-- **Trò chuyện thông minh**: Tương tác trực tiếp qua giao diện, nhận câu trả lời chính xác từ tri thức dự án.  
-- **Tăng hiệu quả**: Cung cấp truy cập thông tin tức thì, giảm thời gian tìm kiếm, hỗ trợ ra quyết định.
-"""
-        return content
+        return UIMessages.get_welcome_message()
     
     @staticmethod
     def format_file_processing_start(file_names: List[str]) -> str:
@@ -48,7 +40,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
             Formatted processing start message
         """
         file_list = "\n".join([f"- {name}" for name in file_names])
-        return f"I received the following files:\n{file_list}\n\nPlease wait for the system to build knowledge graph..."
+        return UIMessages.FILE_PROCESSING_START.format(file_list=file_list)
     
     @staticmethod
     def format_processing_success(result: Dict[str, Any]) -> str:
@@ -64,14 +56,14 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         summary = result.get("summary", {})
         by_category = result.get("by_category", {})
         
-        content = "✅ **Documents processed successfully!**\n\n"
-        content += "📊 **Summary:**\n"
+        content = f"{UIMessages.DOCUMENTS_PROCESSED_SUCCESS}\n\n"
+        content += f"{UIMessages.SUMMARY_HEADER}\n"
         content += f"- Total files: {summary.get('total_files', 0)}\n"
         content += f"- Episodes created: {summary.get('total_episodes', 0)}\n"
         content += f"- Knowledge nodes: {summary.get('total_nodes', 0)}\n"
         content += f"- Relationships: {summary.get('total_edges', 0)}\n\n"
         
-        content += "📂 **By Category:**\n"
+        content += f"{UIMessages.CATEGORY_HEADER}\n"
         for category, items in by_category.items():
             if items:
                 content += f"- {category.replace('_', ' ').title()}: {len(items)} sections\n"
@@ -89,7 +81,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted error message
         """
-        error_content = "❌ **Error processing documents:**\n\n"
+        error_content = f"{UIMessages.DOCUMENTS_PROCESSING_ERROR}\n\n"
         error_content += f"**Message:** {result.get('message', 'Unknown error')}\n\n"
         
         if result.get('error'):
@@ -109,7 +101,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted search result message
         """
-        return f"Here is the search result:\n{formatted_result}"
+        return f"{UIMessages.SEARCH_RESULT_PREFIX}{formatted_result}"
     
     @staticmethod
     def format_clear_success() -> str:
@@ -119,7 +111,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted clear success message
         """
-        return "✅ Knowledge graph has been cleared successfully!"
+        return UIMessages.KNOWLEDGE_GRAPH_CLEARED
     
     @staticmethod
     def format_initialization_success() -> str:
@@ -129,7 +121,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted initialization success message
         """
-        return "Knowledge graph has been built successfully!"
+        return UIMessages.KNOWLEDGE_GRAPH_INITIALIZED
     
     @staticmethod
     def format_initialization_error(result: Dict[str, Any]) -> str:
@@ -142,7 +134,7 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted initialization error message
         """
-        return f"Failed to initialize: {result.get('message', 'Unknown error')}"
+        return UIMessages.INITIALIZATION_FAILED.format(message=result.get('message', 'Unknown error'))
     
     @staticmethod
     def format_feature_coming_soon(feature_name: str) -> str:
@@ -155,4 +147,4 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         Returns:
             Formatted coming soon message
         """
-        return f"{feature_name} feature coming soon!"
+        return UIMessages.FEATURE_COMING_SOON.format(feature_name=feature_name)
