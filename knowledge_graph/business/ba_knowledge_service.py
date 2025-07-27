@@ -42,7 +42,10 @@ class BAKnowledgeService(BAKnowledgeInterface):
     ) -> Dict[str, Any]:
         """Add business documents to the knowledge graph."""
         try:
-            results = await self._content_processor.add_multiple_files(documents)
+            result = await self._content_processor.add_multiple_files(documents)
+            
+            # Extract details from new structured format
+            episode_details = result.get("details", [])
             
             # Categorize results by document type
             categorized_results = {
@@ -52,25 +55,24 @@ class BAKnowledgeService(BAKnowledgeInterface):
                 "other": []
             }
             
-            total_episodes = 0
+            total_episodes = result.get("episodes_added", 0)
             total_nodes = 0
             total_edges = 0
             
-            for result in results:
-                file_path = result.get("file_path", "")
-                total_episodes += 1
-                total_nodes += result.get("nodes_created", 0)
-                total_edges += result.get("edges_created", 0)
+            for episode_detail in episode_details:
+                file_path = episode_detail.get("file_path", "")
+                total_nodes += episode_detail.get("nodes_created", 0)
+                total_edges += episode_detail.get("edges_created", 0)
                 
                 # Categorize by file path
                 if "requirements" in file_path.lower():
-                    categorized_results["requirements"].append(result)
+                    categorized_results["requirements"].append(episode_detail)
                 elif "design" in file_path.lower():
-                    categorized_results["design_docs"].append(result)
+                    categorized_results["design_docs"].append(episode_detail)
                 elif "manual" in file_path.lower() or "user" in file_path.lower():
-                    categorized_results["user_manuals"].append(result)
+                    categorized_results["user_manuals"].append(episode_detail)
                 else:
-                    categorized_results["other"].append(result)
+                    categorized_results["other"].append(episode_detail)
             
             return {
                 "status": "success",
@@ -98,16 +100,19 @@ class BAKnowledgeService(BAKnowledgeInterface):
     ) -> Dict[str, Any]:
         """Add a business requirement document to the knowledge graph."""
         try:
-            results = await self._content_processor.add_file_content(file_path, content)
+            result = await self._content_processor.add_file_content(file_path, content)
+            
+            # Extract details from new structured format
+            episode_details = result.get("details", [])
             
             return {
                 "status": "success",
                 "document_type": "requirement",
                 "file_path": file_path,
-                "sections_processed": len(results),
-                "total_nodes": sum(r.get("nodes_created", 0) for r in results),
-                "total_edges": sum(r.get("edges_created", 0) for r in results),
-                "sections": [r.get("section_title") for r in results],
+                "sections_processed": result.get("episodes_added", 0),
+                "total_nodes": sum(r.get("nodes_created", 0) for r in episode_details),
+                "total_edges": sum(r.get("edges_created", 0) for r in episode_details),
+                "sections": [r.get("section_title") for r in episode_details],
                 "processed_at": datetime.now(timezone.utc).isoformat()
             }
             
@@ -127,16 +132,19 @@ class BAKnowledgeService(BAKnowledgeInterface):
     ) -> Dict[str, Any]:
         """Add a design document to the knowledge graph."""
         try:
-            results = await self._content_processor.add_file_content(file_path, content)
+            result = await self._content_processor.add_file_content(file_path, content)
+            
+            # Extract details from new structured format
+            episode_details = result.get("details", [])
             
             return {
                 "status": "success",
                 "document_type": "design",
                 "file_path": file_path,
-                "sections_processed": len(results),
-                "total_nodes": sum(r.get("nodes_created", 0) for r in results),
-                "total_edges": sum(r.get("edges_created", 0) for r in results),
-                "sections": [r.get("section_title") for r in results],
+                "sections_processed": result.get("episodes_added", 0),
+                "total_nodes": sum(r.get("nodes_created", 0) for r in episode_details),
+                "total_edges": sum(r.get("edges_created", 0) for r in episode_details),
+                "sections": [r.get("section_title") for r in episode_details],
                 "processed_at": datetime.now(timezone.utc).isoformat()
             }
             
@@ -156,16 +164,19 @@ class BAKnowledgeService(BAKnowledgeInterface):
     ) -> Dict[str, Any]:
         """Add a user manual to the knowledge graph."""
         try:
-            results = await self._content_processor.add_file_content(file_path, content)
+            result = await self._content_processor.add_file_content(file_path, content)
+            
+            # Extract details from new structured format
+            episode_details = result.get("details", [])
             
             return {
                 "status": "success",
                 "document_type": "user_manual",
                 "file_path": file_path,
-                "sections_processed": len(results),
-                "total_nodes": sum(r.get("nodes_created", 0) for r in results),
-                "total_edges": sum(r.get("edges_created", 0) for r in results),
-                "sections": [r.get("section_title") for r in results],
+                "sections_processed": result.get("episodes_added", 0),
+                "total_nodes": sum(r.get("nodes_created", 0) for r in episode_details),
+                "total_edges": sum(r.get("edges_created", 0) for r in episode_details),
+                "sections": [r.get("section_title") for r in episode_details],
                 "processed_at": datetime.now(timezone.utc).isoformat()
             }
             
