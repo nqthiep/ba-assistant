@@ -8,8 +8,7 @@ from typing import List, Dict, Any, Tuple
 import os
 
 from .ba_knowledge_interface import BAKnowledgeInterface
-from knowledge_graph.processing.content_processor_interface import ContentProcessorInterface
-from knowledge_graph.processing.content_processor_service import ContentProcessorService
+from knowledge_graph.processing import ContentProcessorInterface, ContentProcessorService
 from knowledge_graph.core.graphiti_core_interface import GraphitiCoreInterface
 from knowledge_graph.core.graphiti_core_service import GraphitiCoreService
 
@@ -35,6 +34,111 @@ class BAKnowledgeService(BAKnowledgeInterface):
             return self._format_search_results(edges)
         except Exception as e:
             return f"Search failed: {str(e)}"
+    
+    async def process_uploaded_files(
+        self, 
+        files: List[Any]
+    ) -> Dict[str, Any]:
+        """
+        Process uploaded files through the complete document processing pipeline.
+        
+        This method uses the new Layer 2 pipeline that:
+        1. Converts files to markdown
+        2. Parses markdown into sections
+        3. Adds sections as episodes to knowledge graph
+        
+        Args:
+            files (List[Any]): List of uploaded file objects
+            
+        Returns:
+            Dict[str, Any]: Business-formatted response with categorized results
+        """
+        try:
+            # Use the new complete pipeline from Layer 2
+            result = await self._content_processor.process_uploaded_files(files)
+            
+            if not result.get("success", False):
+                return {
+                    "status": "error",
+                    "message": result.get("message", "Unknown error occurred"),
+                    "summary": {
+                        "total_files": len(files),
+                        "total_episodes": 0,
+                        "total_nodes": 0,
+                        "total_edges": 0
+                    },
+                    "by_category": {
+                        "requirements": [],
+                        "design_docs": [],
+                        "user_manuals": [],
+                        "other": []
+                    },
+                    "processed_at": datetime.now(timezone.utc).isoformat(),
+                    "error": result.get("error")
+                }
+            
+            # Extract details from Layer 2 response
+            episode_details = result.get("details", [])
+            
+            # Categorize results by document type (business logic)
+            categorized_results = {
+                "requirements": [],
+                "design_docs": [],
+                "user_manuals": [],
+                "other": []
+            }
+            
+            total_episodes = result.get("episodes_added", 0)
+            total_nodes = 0
+            total_edges = 0
+            
+            for episode_detail in episode_details:
+                file_path = episode_detail.get("file_path", "")
+                total_nodes += episode_detail.get("nodes_created", 0)
+                total_edges += episode_detail.get("edges_created", 0)
+                
+                # Business logic: Categorize by file path
+                if "requirements" in file_path.lower() or "requirement" in file_path.lower():
+                    categorized_results["requirements"].append(episode_detail)
+                elif "design" in file_path.lower() or "architecture" in file_path.lower():
+                    categorized_results["design_docs"].append(episode_detail)
+                elif "manual" in file_path.lower() or "user" in file_path.lower() or "guide" in file_path.lower():
+                    categorized_results["user_manuals"].append(episode_detail)
+                else:
+                    categorized_results["other"].append(episode_detail)
+            
+            return {
+                "status": "success",
+                "message": result.get("message", "Files processed successfully"),
+                "summary": {
+                    "total_files": result.get("files_processed", len(files)),
+                    "total_episodes": total_episodes,
+                    "total_nodes": total_nodes,
+                    "total_edges": total_edges
+                },
+                "by_category": categorized_results,
+                "processed_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to process uploaded files: {str(e)}",
+                "summary": {
+                    "total_files": len(files),
+                    "total_episodes": 0,
+                    "total_nodes": 0,
+                    "total_edges": 0
+                },
+                "by_category": {
+                    "requirements": [],
+                    "design_docs": [],
+                    "user_manuals": [],
+                    "other": []
+                },
+                "processed_at": datetime.now(timezone.utc).isoformat(),
+                "error": str(e)
+            }
     
     async def add_business_documents(
         self, 

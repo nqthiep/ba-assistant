@@ -1,9 +1,17 @@
 """
-Knowledge Graph Processing Layer
-Layer 2 - Common content processing operations
+Processing Layer
+Layer 2 - Content processing and transformation services.
 """
 
-from .content_processor_interface import ContentProcessorInterface
-from .content_processor_service import ContentProcessorService
+# Import from organized sub-modules
+from .interfaces import ContentProcessorInterface
+from .services import ContentProcessorService
+from .converters import DocumentConverter
+from .parsers import MarkdownSectionParser
 
-__all__ = ['ContentProcessorInterface', 'ContentProcessorService']
+__all__ = [
+    'ContentProcessorInterface',
+    'ContentProcessorService', 
+    'DocumentConverter',
+    'MarkdownSectionParser'
+]

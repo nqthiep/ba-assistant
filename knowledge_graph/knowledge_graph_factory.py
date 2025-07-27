@@ -6,8 +6,7 @@ Provides easy access to all layers with proper dependency injection.
 
 from knowledge_graph.core.graphiti_core_interface import GraphitiCoreInterface
 from knowledge_graph.core.graphiti_core_service import GraphitiCoreService
-from knowledge_graph.processing.content_processor_interface import ContentProcessorInterface
-from knowledge_graph.processing.content_processor_service import ContentProcessorService
+from knowledge_graph.processing import ContentProcessorInterface, ContentProcessorService
 from knowledge_graph.business.ba_knowledge_interface import BAKnowledgeInterface
 from knowledge_graph.business.ba_knowledge_service import BAKnowledgeService
 

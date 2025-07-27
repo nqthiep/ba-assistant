@@ -6,9 +6,9 @@ Uses Layer 3 (BA Knowledge Service) directly for clean architecture.
 """
 
 import chainlit as cl
-from typing import List, Tuple
+from typing import List, Tuple, Any
 from knowledge_graph import KnowledgeGraphFactory
-from utils.file_receiver import on_file_receiver
+# from utils.file_receiver import on_file_receiver  # Replaced by new pipeline
 
 
 class ChainlitHandlers:
@@ -95,8 +95,51 @@ BA Assistant là công cụ mạnh mẽ giúp nhóm dự án phần mềm quản
         ).send()
         
         if files:
-            processed_files = await on_file_receiver(files)
-            await self._add_files_to_episodes(processed_files)
+            await self._process_uploaded_files_new_pipeline(files)
+    
+    async def _process_uploaded_files_new_pipeline(self, files: List[Any]) -> None:
+        """
+        Process uploaded files using the new Layer 2 pipeline.
+        This replaces the old file_receiver + add_business_documents flow.
+        """
+        # Build list of file names for user notification
+        file_names = [f"- {file.name if hasattr(file, 'name') else file.path}" for file in files]
+        
+        # Let the user know that the system is processing
+        await cl.Message(
+            content=f"I received the following files:\n{chr(10).join(file_names)}\n\nPlease wait for the system to build knowledge graph..."
+        ).send()
+        
+        # Process files using the new complete pipeline (Layer 3)
+        result = await self.ba_knowledge.process_uploaded_files(files)
+        
+        # Send results to user using Layer 3 response format
+        if result.get("status") == "success":
+            summary = result.get("summary", {})
+            by_category = result.get("by_category", {})
+            
+            content = f"✅ **Documents processed successfully!**\n\n"
+            content += f"📊 **Summary:**\n"
+            content += f"- Total files: {summary.get('total_files', 0)}\n"
+            content += f"- Episodes created: {summary.get('total_episodes', 0)}\n"
+            content += f"- Knowledge nodes: {summary.get('total_nodes', 0)}\n"
+            content += f"- Relationships: {summary.get('total_edges', 0)}\n\n"
+            
+            content += f"📂 **By Category:**\n"
+            for category, items in by_category.items():
+                if items:
+                    content += f"- {category.replace('_', ' ').title()}: {len(items)} sections\n"
+            
+            await cl.Message(content=content).send()
+        else:
+            error_content = f"❌ **Error processing documents:**\n\n"
+            error_content += f"**Message:** {result.get('message', 'Unknown error')}\n\n"
+            
+            if result.get('error'):
+                error_content += f"**Details:** {result.get('error')}\n\n"
+            
+            error_content += "Please check your files and try again."
+            await cl.Message(content=error_content).send()
     
     async def _add_files_to_episodes(self, files: List[Tuple[str, str]]) -> None:
         """Add uploaded files to knowledge graph episodes."""
