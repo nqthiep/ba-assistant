@@ -108,7 +108,7 @@ class ContentProcessorService(ContentProcessorInterface):
                     print(f"[DEBUG] Section: {section['title']}, level: {section['level']}, content length: {len(section['raw_content'])}")
                     # Create episode for each section
                     raw_episode = RawEpisode(
-                        name=f"Document: {section['title']}",
+                        name=f"{section['title']}",
                         content=section['raw_content'],
                         source=EpisodeType.text,
                         source_description=f"Section from file: {file_path}",
@@ -232,7 +232,7 @@ class ContentProcessorService(ContentProcessorInterface):
         
         for section in sections:
             raw_episode = RawEpisode(
-                name=f"Document: {section['title']}",
+                name=f"{section['title']}",
                 content=section['raw_content'],
                 source=EpisodeType.text,
                 source_description=f"Section from file: {file_path}",
@@ -295,7 +295,7 @@ class ContentProcessorService(ContentProcessorInterface):
             
             for section in sections:
                 raw_episode = RawEpisode(
-                    name=f"Document: {section['title']}",
+                    name=f"{section['title']}",
                     content=section['raw_content'],
                     source=EpisodeType.text,
                     source_description=f"Section from file: {file_path}",

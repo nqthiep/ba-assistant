@@ -107,12 +107,12 @@ class MarkdownSectionParser:
             # Fallback to simple regex-based parsing
             return self._fallback_regex_parsing(markdown_content)
     
-    def _extract_heading_text(self, heading_token: Heading) -> str:
+    def _extract_heading_text(self, heading_token) -> str:
         """
-        Extract text content from a heading token.
+        Extract clean text from a heading token.
         
         Args:
-            heading_token (Heading): Mistletoe heading token
+            heading_token: Mistletoe heading token
             
         Returns:
             str: Clean heading text
@@ -127,9 +127,27 @@ class MarkdownSectionParser:
             return text
         except Exception as e:
             logger.warning(f"Failed to extract heading text, using fallback: {e}")
-            # Fallback: try to get raw content
+            # Fallback: try to get raw content from children
             if hasattr(heading_token, 'children') and heading_token.children:
-                return str(heading_token.children[0]).strip()
+                # Extract text content from mistletoe tokens properly
+                text_parts = []
+                for child in heading_token.children:
+                    if hasattr(child, 'content'):
+                        # For RawText tokens, use the content attribute
+                        text_parts.append(str(child.content))
+                    elif hasattr(child, 'children'):
+                        # For nested tokens, recursively extract text
+                        for nested_child in child.children:
+                            if hasattr(nested_child, 'content'):
+                                text_parts.append(str(nested_child.content))
+                            else:
+                                text_parts.append(str(nested_child))
+                    else:
+                        # Last resort: convert to string
+                        text_parts.append(str(child))
+                
+                result = ''.join(text_parts).strip()
+                return result if result else "Untitled"
             return "Untitled"
     
     def _render_tokens_to_markdown(self, tokens: List[Any]) -> str:
@@ -154,8 +172,38 @@ class MarkdownSectionParser:
             return self._renderer.render(temp_doc)
         except Exception as e:
             logger.warning(f"Failed to render tokens to markdown: {e}")
-            # Fallback: convert tokens to string
-            return '\n'.join(str(token) for token in tokens)
+            # Fallback: extract actual content from tokens
+            content_parts = []
+            for token in tokens:
+                try:
+                    if hasattr(token, 'content'):
+                        # For tokens with direct content (like RawText)
+                        content_parts.append(str(token.content))
+                    elif hasattr(token, 'children') and token.children:
+                        # For tokens with children, recursively extract content
+                        for child in token.children:
+                            if hasattr(child, 'content'):
+                                content_parts.append(str(child.content))
+                            else:
+                                content_parts.append(str(child))
+                    else:
+                        # Last resort: convert to string but try to extract meaningful content
+                        token_str = str(token)
+                        if 'content=' in token_str:
+                            # Try to extract content from object representation
+                            import re
+                            match = re.search(r"content='([^']*)", token_str)
+                            if match:
+                                content_parts.append(match.group(1))
+                            else:
+                                content_parts.append(token_str)
+                        else:
+                            content_parts.append(token_str)
+                except Exception as token_error:
+                    logger.warning(f"Failed to extract content from token {type(token)}: {token_error}")
+                    content_parts.append(str(token))
+            
+            return '\n'.join(content_parts)
     
     def _fallback_regex_parsing(self, markdown_content: str) -> List[Dict[str, Any]]:
         """

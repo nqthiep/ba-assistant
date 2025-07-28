@@ -63,6 +63,9 @@ class ChatLifecycleHandler(BaseChainlitHandler):
         status = await self.ba_knowledge.get_knowledge_status()
         print(f"Status: {status} and has data: {status.get('has_data', False)}")
         
+        # Always ensure indices and constraints are built for proper entity extraction
+        await self._ensure_graph_setup()
+        
         # Initialize system if no data exists
         if not status.get("has_data", False):
             await self._initialize_knowledge_system()
@@ -88,6 +91,19 @@ class ChatLifecycleHandler(BaseChainlitHandler):
         else:
             error_message = ResponseFormatter.format_initialization_error(init_result)
             await self.send_message(error_message)
+    
+    async def _ensure_graph_setup(self) -> None:
+        """
+        Ensure graph indices and constraints are properly set up.
+        This is critical for entity extraction and relationship creation.
+        """
+        try:
+            print("[DEBUG] Ensuring graph indices and constraints are built...")
+            await self.ba_knowledge.initialize_knowledge_system()
+            print("[DEBUG] Graph setup completed successfully")
+        except Exception as e:
+            print(f"[ERROR] Failed to setup graph indices and constraints: {e}")
+            await self.send_message(f"⚠️ Warning: Graph setup failed. Entity extraction may not work properly: {str(e)}")
     
     def get_available_commands(self) -> List[Dict[str, Any]]:
         """
