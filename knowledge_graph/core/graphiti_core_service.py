@@ -94,8 +94,24 @@ class GraphitiCoreService(GraphitiCoreInterface):
         """Add multiple episodes to the knowledge graph in bulk with fallback to individual additions."""
         try:
             # Try bulk addition first
-            result = await self.graphiti.add_episode_bulk(episodes)
-            return result
+            # result = await self.graphiti.add_episode_bulk(episodes)
+            results = []
+            for episode in episodes:
+                try:
+                    individual_result = await self.graphiti.add_episode(
+                        name=episode.name,
+                        episode_body=episode.content,
+                        source=episode.source,
+                        source_description=episode.source_description,
+                        reference_time=episode.reference_time,
+                        update_communities=True
+                    )
+                    results.append(individual_result)
+                except Exception as individual_error:
+                    print(f"Failed to add individual episode '{episode.name}': {individual_error}")
+                    # Continue with other episodes even if one fails
+                    continue
+            return results
         except Exception as e:
             # If bulk fails, fall back to individual additions
             print(f"Bulk episode addition failed in Graphiti API: {e}. Using individual additions.")

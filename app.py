@@ -4,10 +4,18 @@ This file serves as the main entry point for the Chainlit application.
 Follows SOLID principles by delegating responsibilities to specialized modules.
 """
 
+import logging
 import chainlit as cl
 import os
 from dotenv import load_dotenv
 from ui.chainlit_orchestrator import ChainlitOrchestrator
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env if present
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)

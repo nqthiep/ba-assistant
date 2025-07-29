@@ -6,11 +6,86 @@ Layer 2 - Parse markdown content into structured sections using mistletoe.
 import mistletoe
 from mistletoe import Document
 from mistletoe.block_token import Heading, Paragraph, CodeFence, Quote, List as MistletoeList
-from mistletoe.markdown_renderer import MarkdownRenderer
+from mistletoe.base_renderer import BaseRenderer
 from typing import List, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class SafeMarkdownRenderer(BaseRenderer):
+    """
+    Safe markdown renderer that avoids mistletoe API compatibility issues.
+    """
+    
+    def render_document(self, token):
+        """Render a document token."""
+        if not hasattr(token, 'children') or token.children is None:
+            return ''
+        return ''.join(self.render(child) for child in token.children)
+    
+    def render_heading(self, token):
+        """Render a heading token."""
+        level = '#' * token.level
+        if not hasattr(token, 'children') or token.children is None:
+            content = ''
+        else:
+            content = ''.join(self.render(child) for child in token.children)
+        return f"{level} {content}\n\n"
+    
+    def render_paragraph(self, token):
+        """Render a paragraph token."""
+        if not hasattr(token, 'children') or token.children is None:
+            content = ''
+        else:
+            content = ''.join(self.render(child) for child in token.children)
+        return f"{content}\n\n"
+    
+    def render_raw_text(self, token):
+        """Render raw text token."""
+        return str(token.content)
+    
+    def render_list(self, token):
+        """Render a list token."""
+        items = []
+        if hasattr(token, 'children') and token.children is not None:
+            for item in token.children:
+                if hasattr(item, 'children') and item.children is not None:
+                    item_content = ''.join(self.render(child) for child in item.children)
+                else:
+                    item_content = str(item)
+                items.append(f"- {item_content}")
+        return '\n'.join(items) + '\n\n'
+    
+    def render_code_fence(self, token):
+        """Render a code fence token."""
+        language = getattr(token, 'language', '') or ''
+        content = str(token.children[0].content) if token.children else ''
+        return f"```{language}\n{content}\n```\n\n"
+    
+    def render_quote(self, token):
+        """Render a quote token."""
+        if not hasattr(token, 'children') or token.children is None:
+            content = ''
+        else:
+            content = ''.join(self.render(child) for child in token.children)
+        lines = content.strip().split('\n')
+        quoted_lines = [f"> {line}" for line in lines]
+        return '\n'.join(quoted_lines) + '\n\n'
+    
+    def render(self, token):
+        """Render any token by dispatching to appropriate method."""
+        method_name = f"render_{token.__class__.__name__.lower()}"
+        if hasattr(self, method_name):
+            return getattr(self, method_name)(token)
+        else:
+            # Fallback for unknown tokens
+            if hasattr(token, 'children') and token.children is not None:
+                return ''.join(self.render(child) for child in token.children)
+            elif hasattr(token, 'content'):
+                return str(token.content)
+            else:
+                return str(token)
 
 
 class MarkdownSectionParser:
@@ -20,8 +95,8 @@ class MarkdownSectionParser:
     """
     
     def __init__(self):
-        """Initialize the markdown parser with mistletoe renderer."""
-        self._renderer = MarkdownRenderer()
+        """Initialize the markdown parser with safe renderer."""
+        self._renderer = SafeMarkdownRenderer()
     
     def parse_markdown_to_sections(self, markdown_content: str) -> List[Dict[str, Any]]:
         """
