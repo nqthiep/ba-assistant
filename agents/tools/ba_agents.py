@@ -21,7 +21,7 @@ class BAKnowledgeAgent:
         "gpt-4": "OPENAI_API_KEY",
         "gpt-4.1-mini": "OPENAI_API_KEY",
         "gpt-3.5-turbo": "OPENAI_API_KEY",
-        "gemini-2-flash": "GOOGLE_API_KEY",
+        "gemini-2.0-flash": "GOOGLE_API_KEY",
     }
     
     def __init__(self, model_name: str = None):
