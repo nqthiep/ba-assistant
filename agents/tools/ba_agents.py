@@ -16,6 +16,14 @@ from langchain.chat_models import ChatOpenAI
 class BAKnowledgeAgent:
     """Agent for handling knowledge-based interactions using LLM and knowledge graph."""
     
+    # Model to environment variable mapping
+    MODEL_API_KEYS = {
+        "gpt-4": "OPENAI_API_KEY",
+        "gpt-4.1-mini": "OPENAI_API_KEY",
+        "gpt-3.5-turbo": "OPENAI_API_KEY",
+        "gemini-2-flash": "GOOGLE_API_KEY",
+    }
+    
     def __init__(self, model_name: str = None):
         self.knowledge_service = BAKnowledgeService()
         
@@ -24,16 +32,22 @@ class BAKnowledgeAgent:
         if not self.system_prompt:
             msg = "System prompt could not be loaded. Using fallback prompt."
             logging.error(msg)
-            self.system_prompt = """You are a helpful BA assistant. Answer questions using the provided context."""
+            self.system_prompt = """You are a helpful BA assistant. Answer questions {question} using the provided context {context}."""
         
         # Use environment variable with fallback for model name
         self.model_name = model_name or os.getenv("BA_MODEL_NAME", "gpt-4.1-mini")
         
-        # Validate OpenAI API key
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
+        # Get corresponding API key for the model
+        api_key_env = self.MODEL_API_KEYS.get(self.model_name)
+        if not api_key_env:
+            raise ValueError(f"Unsupported model: {self.model_name}")
             
+        api_key = os.getenv(api_key_env)
+        if not api_key:
+            raise ValueError(f"API key not found: {api_key_env} environment variable is not set")
+            
+        logging.info(f"Initializing LLM with model: {self.model_name}")
+        
         try:
             self.llm = ChatOpenAI(
                 model_name=self.model_name,
@@ -41,7 +55,7 @@ class BAKnowledgeAgent:
                 api_key=api_key
             )
         except Exception as e:
-            logging.error(f"Failed to initialize ChatOpenAI: {e}")
+            logging.error(f"Failed to initialize ChatOpenAI with model {self.model_name}: {e}")
             raise
 
         # Initialize builder and build workflow
