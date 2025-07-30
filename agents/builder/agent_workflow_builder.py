@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from typing_extensions import TypedDict
 from datetime import datetime, timezone
+import logging
 
 from langgraph.graph import StateGraph, END, START
 from knowledge_graph.business.ba_knowledge_service import BAKnowledgeService
@@ -35,7 +36,6 @@ class BAKnowledgeWorkflowBuilder:
             return state
 
         async def retrieve(state: BAKnowledgeState) -> BAKnowledgeState:
-            print(f"Retrieving knowledge for query: {state['query']}")
             results = await self.kg_service.search_business_knowledge(state["query"])
             state["context"] = results
             return state
@@ -47,10 +47,8 @@ class BAKnowledgeWorkflowBuilder:
             
             prompt_template = PromptTemplate.from_template(self.system_prompt)
             prompt = prompt_template.invoke({"question": state["query"], "context": state["context"]})
-            print("Prompt is : ", prompt)
             llm_result = await self.llm.ainvoke(prompt)
             state["response"] = llm_result.content.strip()
-            print(f"Generated response: {state['response']}")
             return state
 
         async def update_mem(state: BAKnowledgeState) -> BAKnowledgeState:

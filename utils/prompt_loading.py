@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -29,7 +30,7 @@ class PromptLoader:
             
             # Check if file exists
             if not file_path.exists():
-                print(f"Warning: Prompt file not found: {file_path}")
+                logging.warning(f"Prompt file not found: {file_path}")
                 return None
             
             # Read content
@@ -41,7 +42,7 @@ class PromptLoader:
             return content
             
         except Exception as e:
-            print(f"Error loading prompt {prompt_name}: {str(e)}")
+            logging.exception(f"Error loading prompt {prompt_name}")
             return None
     
     def refresh_cache(self) -> None:
@@ -53,7 +54,7 @@ class PromptLoader:
         try:
             return [f.stem for f in self.prompt_dir.glob("*.md")]
         except Exception as e:
-            print(f"Error listing prompts: {str(e)}")
+            logging.exception("Error listing prompts.")
             return []
 
 # Create singleton instance
